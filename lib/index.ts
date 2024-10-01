@@ -1,6 +1,5 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import Queue from 'queue'
 import type { imageType } from './types/index'
 import { typeHandlers } from './types/index'
 import { detector } from './detector'
@@ -82,15 +81,12 @@ module.exports = exports = imageSize // backwards compatibility
 
 export default imageSize
 export function imageSize(input: Uint8Array | string): ISizeCalculationResult
-export function imageSize(input: string, callback: CallbackFn): void
 
 /**
  * @param {Uint8Array|string} input - Uint8Array or relative/absolute path of the image file
- * @param {Function=} [callback] - optional function for async detection
  */
 export function imageSize(
   input: Uint8Array | string,
-  callback?: CallbackFn,
 ): ISizeCalculationResult | undefined {
   // Handle Uint8Array input
   if (input instanceof Uint8Array) {
@@ -104,18 +100,9 @@ export function imageSize(
 
   // resolve the file path
   const filepath = path.resolve(input)
-  if (typeof callback === 'function') {
-    queue.push(() =>
-      readFileAsync(filepath)
-        .then((input) =>
-          process.nextTick(callback, null, lookup(input, filepath)),
-        )
-        .catch(callback),
-    )
-  } else {
-    const input = readFileSync(filepath)
-    return lookup(input, filepath)
-  }
+
+  const inp = readFileSync(filepath)
+  return lookup(inp, filepath)
 }
 
 export const disableFS = (v: boolean): void => {
