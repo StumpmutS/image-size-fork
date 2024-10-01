@@ -12,9 +12,6 @@ type CallbackFn = (e: Error | null, r?: ISizeCalculationResult) => void
 // TO-DO: make this adaptive based on the initial signature of the image
 const MaxInputSize = 512 * 1024
 
-// This queue is for async `fs` operations, to avoid reaching file-descriptor limits
-const queue = new Queue({ concurrency: 100, autostart: true })
-
 interface Options {
   disabledFS: boolean
   disabledTypes: imageType[]
@@ -55,27 +52,6 @@ function lookup(input: Uint8Array, filepath?: string): ISizeCalculationResult {
   throw new TypeError(
     'unsupported file type: ' + type + ' (file: ' + filepath + ')',
   )
-}
-
-/**
- * Reads a file into an Uint8Array.
- * @param {String} filepath
- * @returns {Promise<Uint8Array>}
- */
-async function readFileAsync(filepath: string): Promise<Uint8Array> {
-  const handle = await fs.promises.open(filepath, 'r')
-  try {
-    const { size } = await handle.stat()
-    if (size <= 0) {
-      throw new Error('Empty file')
-    }
-    const inputSize = Math.min(size, MaxInputSize)
-    const input = new Uint8Array(inputSize)
-    await handle.read(input, 0, inputSize, 0)
-    return input
-  } finally {
-    await handle.close()
-  }
 }
 
 /**
@@ -147,8 +123,5 @@ export const disableFS = (v: boolean): void => {
 }
 export const disableTypes = (types: imageType[]): void => {
   globalOptions.disabledTypes = types
-}
-export const setConcurrency = (c: number): void => {
-  queue.concurrency = c
 }
 export const types = Object.keys(typeHandlers)
